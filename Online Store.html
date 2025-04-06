@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ABS Store - Modern Shopping Experience</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+  <!-- p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+  <!-- GSAP for animations -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Custom styles -->
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #f97316;
+      --dark: #111827;
+      --light: #f9fafb;
+      --gray: #6b7280;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+    
+    .hero-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    
+    .p5-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.2;
+    }
+    
+    .product-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .product-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .category-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .category-card:hover {
+      transform: scale(1.03);
+    }
+    
+    .nav-link {
+      position: relative;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: var(--primary);
+      transition: width 0.3s ease;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .cart-count {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: var(--secondary);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .scroll-indicator {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0) translateX(-50%);
+      }
+      40% {
+        transform: translateY(-20px) translateX(-50%);
+      }
+      60% {
+        transform: translateY(-10px) translateX(-50%);
+      }
+    }
+    
+    .featured-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: var(--secondary);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .sale-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #ef4444;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .new-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #10b981;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .color-option {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    
+    .color-option:hover {
+      transform: scale(1.2);
+    }
+    
+    .color-option.selected {
+      border: 2px solid var(--primary);
+    }
+    
+    /* Mobile menu */
+    .mobile-menu {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 80%;
+      height: 100vh;
+      background-color: white;
+      z-index: 100;
+      transition: right 0.3s ease;
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-menu.active {
+      right: 0;
+    }
+    
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 99;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    /* Cart sidebar */
+    .cart-sidebar {
+      position: fixed;
+      top: 0;
+      right: -100%;
+      width: 400px;
+      max-width: 90%;
+      height: 100vh;
+      background-color: white;
+      z-index: 100;
+      transition: right 0.3s ease;
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .cart-sidebar.active {
+      right: 0;
+    }
+    
+    /* Newsletter form animation */
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+      }
+    }
+    
+    .newsletter-input:focus {
+      animation: pulse 1.5s infinite;
+    }
+    
+    /* Loading animation */
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid var(--light);
+      border-bottom-color: var(--primary);
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+    }
+    
+    @keyframes rotation {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--gray);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--dark);
+    }
+  </style>
+  <!-- Tailwind config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',
+            'primary-dark': '#1d4ed8',
+            secondary: '#f97316',
+            dark: '#111827',
+            light: '#f9fafb',
+            gray: '#6b7280',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-white">
+  <!-- Loading screen -->
+  <div id="loading-screen" class="fixed inset-0 bg-white flex items-center justify-center z-50">
+    <div class="text-center">
+      <span class="loader"></span>
+      <p class="mt-4 text-lg font-medium text-gray-600">Loading ABS Store...</p>
+    </div>
+  </div>
+
+  <!-- Mobile menu overlay -->
+  <div id="overlay" class="overlay"></div>
+  
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="mobile-menu p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-2xl font-bold">ABS Store</h2>
+      <button id="close-menu" class="text-2xl">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <nav>
+      <ul class="space-y-6">
+        <li><a href="#" class="text-lg font-medium">Home</a></li>
+        <li><a href="#products" class="text-lg font-medium">Products</a></li>
+        <li><a href="#categories" class="text-lg font-medium">Categories</a></li>
+        <li><a href="#featured" class="text-lg font-medium">Featured</a></li>
+        <li><a href="#about" class="text-lg font-medium">About</a></li>
+        <li><a href="#contact" class="text-lg font-medium">Contact</a></li>
+      </ul>
+    </nav>
+    <div class="mt-8">
+      <a href="#" class="block w-full py-3 px-4 bg-primary text-white text-center rounded-md font-medium">Sign In</a>
+      <a href="#" class="block w-full py-3 px-4 bg-white border border-gray-300 text-dark text-center rounded-md font-medium mt-3">Create Account</a>
+    </div>
+  </div>
+  
+  <!-- Cart sidebar -->
+  <div id="cart-sidebar" class="cart-sidebar p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">Your Cart</h2>
+      <button id="close-cart" class="text-2xl">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div id="cart-items" class="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto">
+      <!-- Cart items will be added here dynamically -->
+    </div>
+    
+    <div class="border-t border-gray-200 mt-6 pt-6">
+      <div class="flex justify-between mb-2">
+        <span class="text-gray-600">Subtotal</span>
+        <span class="font-medium" id="cart-subtotal">$0.00</span>
+      </div>
+      <div class="flex justify-between mb-2">
+        <span class="text-gray-600">Shipping</span>
+        <span class="font-medium">$5.99</span>
+      </div>
+      <div class="flex justify-between mb-4">
+        <span class="text-gray-600">Tax</span>
+        <span class="font-medium" id="cart-tax">$0.00</span>
+      </div>
+      <div class="flex justify-between text-lg font-bold">
+        <span>Total</span>
+        <span id="cart-total">$0.00</span>
+      </div>
+      
+      <button class="w-full py-3 bg-primary text-white rounded-md font-medium mt-6">
+        Checkout
+      </button>
+      <button id="continue-shopping" class="w-full py-3 bg-white border border-gray-300 text-dark rounded-md font-medium mt-3">
+        Continue Shopping
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="fixed top-0 left-0 w-full bg-white bg-opacity-95 backdrop-blur-sm z-40 shadow-sm">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <a href="#" class="text-2xl font-bold">ABS Store</a>
+        
+        <nav class="hidden md:block">
+          <ul class="flex space-x-8">
+            <li><a href="#" class="nav-link font-medium">Home</a></li>
+            <li><a href="#products" class="nav-link font-medium">Products</a></li>
+            <li><a href="#categories" class="nav-link font-medium">Categories</a></li>
+            <li><a href="#featured" class="nav-link font-medium">Featured</a></li>
+            <li><a href="#about" class="nav-link font-medium">About</a></li>
+            <li><a href="#contact" class="nav-link font-medium">Contact</a></li>
+          </ul>
+        </nav>
+        
+        <div class="flex items-center space-x-4">
+          <button class="relative p-2">
+            <i class="fas fa-search text-lg"></i>
+          </button>
+          <button class="relative p-2" id="cart-button">
+            <i class="fas fa-shopping-cart text-lg"></i>
+            <span class="cart-count">3</span>
+          </button>
+          <button class="relative p-2 hidden md:block">
+            <i class="fas fa-user text-lg"></i>
+          </button>
+          <button id="menu-button" class="p-2 md:hidden">
+            <i class="fas fa-bars text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="relative h-screen flex items-center justify-center overflow-hidden">
+    <div id="hero-canvas" class="hero-canvas"></div>
+    <div class="container mx-auto px-4 text-center relative z-10">
+      <h1 class="text-4xl md:text-6xl font-bold mb-6 text-white">Welcome to ABS Store</h1>
+      <p class="text-xl md:text-2xl mb-8 text-white max-w-3xl mx-auto">Discover a new shopping experience with our curated collection of premium products.</p>
+      <div class="flex flex-col sm:flex-row justify-center gap-4">
+        <a href="#products" class="bg-white text-primary px-8 py-3 rounded-md font-medium hover:bg-gray-100 transition-colors">
+          Shop Now
+        </a>
+        <a href="#featured" class="bg-transparent border-2 border-white text-white px-8 py-3 rounded-md font-medium hover:bg-white hover:bg-opacity-10 transition-colors">
+          Explore Featured
+        </a>
+      </div>
+    </div>
+    <div class="scroll-indicator text-white">
+      <i class="fas fa-chevron-down text-2xl"></i>
+    </div>
+  </section>
+
+  <!-- Featured Products -->
+  <section id="featured" class="py-16 bg-light">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Featured Products</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">Discover our handpicked selection of premium products that combine style, quality, and functionality.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Product 1 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="featured-badge">Featured</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Minimalist Desk Lamp</h3>
+                <p class="text-gray-500 text-sm">Home Decor</p>
+              </div>
+              <span class="font-bold">$89.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-black selected"></div>
+              <div class="color-option bg-white border border-gray-300"></div>
+              <div class="color-option bg-amber-700"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 2 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="sale-badge">Sale</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Ceramic Coffee Set</h3>
+                <p class="text-gray-500 text-sm">Kitchen</p>
+              </div>
+              <div>
+                <span class="font-bold">$34.99</span>
+                <span class="text-gray-500 line-through text-sm ml-2">$49.99</span>
+              </div>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-white border border-gray-300 selected"></div>
+              <div class="color-option bg-gray-800"></div>
+              <div class="color-option bg-blue-500"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 3 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="new-badge">New</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Wireless Earbuds</h3>
+                <p class="text-gray-500 text-sm">Electronics</p>
+              </div>
+              <span class="font-bold">$129.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-black selected"></div>
+              <div class="color-option bg-white border border-gray-300"></div>
+              <div class="color-option bg-blue-500"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 4 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Leather Notebook</h3>
+                <p class="text-gray-500 text-sm">Stationery</p>
+              </div>
+              <span class="font-bold">$24.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-amber-700 selected"></div>
+              <div class="color-option bg-black"></div>
+              <div class="color-option bg-gray-400"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-12">
+        <a href="#products" class="inline-block px-8 py-3 bg-white border border-gray-300 rounded-md font-medium hover:bg-gray-50 transition-colors">
+          View All Products
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section id="categories" class="py-16">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Shop by Category</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">Browse our wide selection of products across various categories to find exactly what you need.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Category 1 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Home</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Home Decor</h3>
+            <p class="text-gray-200 mb-4">Elevate your space with our stylish home decor collection</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Category 2 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Tech</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Electronics</h3>
+            <p class="text-gray-200 mb-4">Discover the latest tech gadgets and accessories</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Category 3 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Kitchen</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Kitchen & Dining</h3>
+            <p class="text-gray-200 mb-4">Premium cookware and elegant dining essentials</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Category 4 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Fashion</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Fashion & Accessories</h3>
+            <p class="text-gray-200 mb-4">Stylish clothing and accessories for every occasion</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Category 5 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Office</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Office & Stationery</h3>
+            <p class="text-gray-200 mb-4">Beautiful tools for productivity and creativity</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Category 6 -->
+        <div class="category-card relative overflow-hidden rounded-lg shadow-md">
+          <div class="aspect-video bg-gray-800 flex items-center justify-center">
+            <span class="text-6xl font-thin text-gray-600">Wellness</span>
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <h3 class="text-white text-xl font-bold mb-2">Health & Wellness</h3>
+            <p class="text-gray-200 mb-4">Products designed for your wellbeing and self-care</p>
+            <a href="#" class="text-white flex items-center font-medium">
+              Shop Now <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products Section -->
+  <section id="products" class="py-16 bg-light">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Our Products</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">Explore our wide range of high-quality products designed to enhance your lifestyle.</p>
+      </div>
+      
+      <div class="flex flex-wrap justify-center gap-4 mb-10">
+        <button class="px-6 py-2 bg-primary text-white rounded-full font-medium">All</button>
+        <button class="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors">Home Decor</button>
+        <button class="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors">Electronics</button>
+        <button class="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors">Kitchen</button>
+        <button class="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors">Fashion</button>
+        <button class="px-6 py-2 bg-white border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors">Office</button>
+      </div>
+      
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <!-- Product 1 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Modern Coffee Table</h3>
+                <p class="text-gray-500 text-sm">Furniture</p>
+              </div>
+              <span class="font-bold">$249.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-amber-700 selected"></div>
+              <div class="color-option bg-gray-800"></div>
+              <div class="color-option bg-gray-400"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 2 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="new-badge">New</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Smart Watch</h3>
+                <p class="text-gray-500 text-sm">Electronics</p>
+              </div>
+              <span class="font-bold">$199.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-black selected"></div>
+              <div class="color-option bg-blue-500"></div>
+              <div class="color-option bg-red-500"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 3 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="sale-badge">Sale</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Wool Throw Blanket</h3>
+                <p class="text-gray-500 text-sm">Home Decor</p>
+              </div>
+              <div>
+                <span class="font-bold">$59.99</span>
+                <span class="text-gray-500 line-through text-sm ml-2">$79.99</span>
+              </div>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-gray-400 selected"></div>
+              <div class="color-option bg-amber-700"></div>
+              <div class="color-option bg-blue-700"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 4 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Glass Water Bottle</h3>
+                <p class="text-gray-500 text-sm">Kitchen</p>
+              </div>
+              <span class="font-bold">$29.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-blue-500 selected"></div>
+              <div class="color-option bg-green-500"></div>
+              <div class="color-option bg-pink-500"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 5 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Scented Candle Set</h3>
+                <p class="text-gray-500 text-sm">Home Decor</p>
+              </div>
+              <span class="font-bold">$39.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-amber-200 selected"></div>
+              <div class="color-option bg-gray-200"></div>
+              <div class="color-option bg-green-200"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 6 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="featured-badge">Featured</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Bluetooth Speaker</h3>
+                <p class="text-gray-500 text-sm">Electronics</p>
+              </div>
+              <span class="font-bold">$79.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-black selected"></div>
+              <div class="color-option bg-white border border-gray-300"></div>
+              <div class="color-option bg-red-500"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 7 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Desk Organizer</h3>
+                <p class="text-gray-500 text-sm">Office</p>
+              </div>
+              <span class="font-bold">$19.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-white border border-gray-300 selected"></div>
+              <div class="color-option bg-black"></div>
+              <div class="color-option bg-amber-700"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+        
+        <!-- Product 8 -->
+        <div class="product-card bg-white rounded-lg overflow-hidden shadow-md">
+          <div class="relative">
+            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+              <span class="text-6xl font-thin text-gray-300">ABS</span>
+            </div>
+            <span class="new-badge">New</span>
+          </div>
+          <div class="p-4">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-medium text-lg">Plant Pot Set</h3>
+                <p class="text-gray-500 text-sm">Home Decor</p>
+              </div>
+              <span class="font-bold">$49.99</span>
+            </div>
+            <div class="flex mt-4 space-x-2">
+              <div class="color-option bg-gray-200 selected"></div>
+              <div class="color-option bg-amber-200"></div>
+              <div class="color-option bg-blue-200"></div>
+            </div>
+            <button class="w-full mt-4 py-2 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-12">
+        <button class="inline-block px-8 py-3 bg-white border border-gray-300 rounded-md font-medium hover:bg-gray-50 transition-colors">
+          Load More Products
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-16">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-bold mb-6">About ABS Store</h2>
+          <p class="text-gray-600 mb-4">ABS Store is a premium online shopping destination offering a curated selection of high-quality products for modern living. We believe in combining style, functionality, and sustainability in everything we offer.</p>
+          <p class="text-gray-600 mb-6">Founded in 2023, our mission is to provide exceptional products that enhance your everyday life while maintaining our commitment to ethical sourcing and environmental responsibility.</p>
+          
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-primary text-xl mr-3"></i>
+              <span>Premium Quality</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-primary text-xl mr-3"></i>
+              <span>Fast Shipping</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-primary text-xl mr-3"></i>
+              <span>Secure Payments</span>
+            </div>
+            <div class="flex items-center">
+              <i class="fas fa-check-circle text-primary text-xl mr-3"></i>
+              <span>24/7 Support</span>
+            </div>
+          </div>
+          
+          <a href="#contact" class="inline-block px-8 py-3 bg-primary text-white rounded-md font-medium hover:bg-primary-dark transition-colors">
+            Learn More
+          </a>
+        </div>
+        
+        <div class="relative">
+          <div id="about-canvas" class="aspect-video bg-gray-100 rounded-lg overflow-hidden"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="py-16 bg-light">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">What Our Customers Say</h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">Don't just take our word for it. Here's what our satisfied customers have to say about their shopping experience.</p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Testimonial 1 -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
+              <span class="text-gray-500 font-medium">SJ</span>
+            </div>
+            <div>
+              <h4 class="font-medium">Sarah Johnson</h4>
+              <div class="flex text-yellow-400">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+            </div>
+          </div>
+          <p class="text-gray-600">"I'm absolutely in love with my new desk lamp! The quality is exceptional and it perfectly complements my home office setup. The shipping was fast and the packaging was eco-friendly. Will definitely shop here again!"</p>
+        </div>
+        
+        <!-- Testimonial 2 -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
+              <span class="text-gray-500 font-medium">MT</span>
+            </div>
+            <div>
+              <h4 class="font-medium">Michael Thompson</h4>
+              <div class="flex text-yellow-400">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star-half-alt"></i>
+              </div>
+            </div>
+          </div>
+          <p class="text-gray-600">"The customer service at ABS Store is outstanding. I had a question about my order and they responded within minutes. The wireless earbuds I purchased exceed my expectations in terms of sound quality and battery life."</p>
+        </div>
+        
+        <!-- Testimonial 3 -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center mb-4">
+            <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
+              <span class="text-gray-500 font-medium">EL</span>
+            </div>
+            <div>
+              <h4 class="font-medium">Emily Liu</h4>
+              <div class="flex text-yellow-400">
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+                <i class="fas fa-star"></i>
+              </div>
+            </div>
+          </div>
+          <p class="text-gray-600">"I've been shopping at ABS Store for all my home decor needs. Their selection is curated so well that everything matches my aesthetic perfectly. The ceramic coffee set I bought receives compliments from every guest!"</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter -->
+  <section class="py-16 bg-primary text-white">
+    <div class="container mx-auto px-4">
+      <div class="max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Join Our Newsletter</h2>
+        <p class="mb-8">Subscribe to our newsletter to receive updates on new products, special offers, and exclusive discounts.</p>
+        
+        <form class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
+          <input type="email" placeholder="Enter your email address" class="newsletter-input flex-grow px-4 py-3 rounded-md text-dark focus:outline-none focus:ring-2 focus:ring-white">
+          <button type="submit" class="px-6 py-3 bg-white text-primary font-medium rounded-md hover:bg-gray-100 transition-colors">
+            Subscribe
+          </button>
+        </form>
+        
+        <p class="text-sm mt-4 text-white/80">By subscribing, you agree to our Privacy Policy and consent to receive updates from our company.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-16">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div>
+          <h2 class="text-3xl md:text-4xl font-bold mb-6">Get In Touch</h2>
+          <p class="text-gray-600 mb-8">Have questions about our products or need assistance with your order? We're here to help! Fill out the form and our team will get back to you as soon as possible.</p>
+          
+          <div class="space-y-6">
+            <div class="flex items-start">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 flex-shrink-0">
+                <i class="fas fa-map-marker-alt text-primary"></i>
+              </div>
+              <div>
+                <h4 class="font-medium mb-1">Our Location</h4>
+                <p class="text-gray-600">123 Design Street, Creative City, 10001</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 flex-shrink-0">
+                <i class="fas fa-envelope text-primary"></i>
+              </div>
+              <div>
+                <h4 class="font-medium mb-1">Email Us</h4>
+                <p class="text-gray-600">info@absstore.com</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 flex-shrink-0">
+                <i class="fas fa-phone-alt text-primary"></i>
+              </div>
+              <div>
+                <h4 class="font-medium mb-1">Call Us</h4>
+                <p class="text-gray-600">+1 (555) 123-4567</p>
+              </div>
+            </div>
+            
+            <div class="flex items-start">
+              <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4 flex-shrink-0">
+                <i class="fas fa-clock text-primary"></i>
+              </div>
+              <div>
+                <h4 class="font-medium mb-1">Working Hours</h4>
+                <p class="text-gray-600">Monday - Friday: 9AM - 6PM</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <form class="bg-white p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              </div>
+              <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+              <input type="text" id="subject" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+            
+            <div class="mb-6">
+              <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+              <textarea id="message" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+            </div>
+            
+            <button type="submit" class="w-full py-3 bg-primary text-white font-medium rounded-md hover:bg-primary-dark transition-colors">
+              Send Message
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-white pt-16 pb-8">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div>
+          <h3 class="text-xl font-bold mb-4">ABS Store</h3>
+          <p class="text-gray-400 mb-6">Your destination for premium products that enhance your lifestyle with style and functionality.</p>
+          <div class="flex space-x-4">
+            <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+            <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <i class="fab fa-twitter"></i>
+            </a>
+            <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <i class="fab fa-instagram"></i>
+            </a>
+            <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-colors">
+              <i class="fab fa-pinterest-p"></i>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-bold mb-4">Shop</h3>
+          <ul class="space-y-3">
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">All Products</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">New Arrivals</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Featured</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Sale</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Gift Cards</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-bold mb-4">Company</h3>
+          <ul class="space-y-3">
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">About Us</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Careers</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Press</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Affiliates</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Sustainability</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-xl font-bold mb-4">Support</h3>
+          <ul class="space-y-3">
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Shipping & Returns</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Order Status</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Payment Methods</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center">
+        <p class="text-gray-400 mb-4 md:mb-0">© 2023 ABS Store. All rights reserved.</p>
+        <div class="flex space-x-6">
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a>
+          <a href="#" class="text-gray-400 hover:text-white transition-colors">Cookies</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Back to top button -->
+  <button id="back-to-top" class="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-lg opacity-0 invisible transition-all duration-300">
+    <i class="fas fa-chevron-up"></i>
+  </button>
+
+  <!-- JavaScript -->
+  <script>
+    // Loading screen
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        document.getElementById('loading-screen').style.opacity = '0';
+        setTimeout(function() {
+          document.getElementById('loading-screen').style.display = 'none';
+        }, 500);
+      }, 1500);
+    });
+    
+    // Mobile menu
+    const menuButton = document.getElementById('menu-button');
+    const closeMenuButton = document.getElementById('close-menu');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const overlay = document.getElementById('overlay');
+    
+    menuButton.addEventListener('click', function() {
+      mobileMenu.classList.add('active');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+    
+    closeMenuButton.addEventListener('click', function() {
+      mobileMenu.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    overlay.addEventListener('click', function() {
+      mobileMenu.classList.remove('active');
+      overlay.classList.remove('active');
+      cartSidebar.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    // Cart sidebar
+    const cartButton = document.getElementById('cart-button');
+    const closeCartButton = document.getElementById('close-cart');
+    const cartSidebar = document.getElementById('cart-sidebar');
+    const continueShoppingButton = document.getElementById('continue-shopping');
+    
+    cartButton.addEventListener('click', function() {
+      cartSidebar.classList.add('active');
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      
+      // Populate cart items (example)
+      populateCart();
+    });
+    
+    closeCartButton.addEventListener('click', function() {
+      cartSidebar.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    continueShoppingButton.addEventListener('click', function() {
+      cartSidebar.classList.remove('active');
+      overlay.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    });
+    
+    // Back to top button
+    const backToTopButton = document.getElementById('back-to-top');
+    
+    window.addEventListener('scroll', function() {
+      if (window.pageYOffset > 300) {
+        backToTopButton.classList.remove('opacity-0', 'invisible');
+        backToTopButton.classList.add('opacity-100', 'visible');
+      } else {
+        backToTopButton.classList.remove('opacity-100', 'visible');
+        backToTopButton.classList.add('opacity-0', 'invisible');
+      }
+    });
+    
+    backToTopButton.addEventListener('click', function() {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+    
+    // Populate cart with sample items
+    function populateCart() {
+      const cartItems = [
+        {
+          name: "Minimalist Desk Lamp",
+          price: 89.99,
+          color: "Black",
+          quantity: 1
+        },
+        {
+          name: "Ceramic Coffee Set",
+          price: 34.99,
+          color: "White",
+          quantity: 2
+        },
+        {
+          name: "Leather Notebook",
+          price: 24.99,
+          color: "Brown",
+          quantity: 1
+        }
+      ];
+      
+      const cartItemsContainer = document.getElementById('cart-items');
+      cartItemsContainer.innerHTML = '';
+      
+      let subtotal = 0;
+      
+      cartItems.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        const itemElement = document.createElement('div');
+        itemElement.className = 'flex items-start border-b border-gray-200 pb-4';
+        itemElement.innerHTML = `
+          <div class="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center mr-4 flex-shrink-0">
+            <span class="text-xl font-thin text-gray-300">ABS</span>
+          </div>
+          <div class="flex-grow">
+            <div class="flex justify-between">
+              <h4 class="font-medium">${item.name}</h4>
+              <span class="font-bold">$${itemTotal.toFixed(2)}</span>
+            </div>
+            <p class="text-sm text-gray-500">Color: ${item.color}</p>
+            <div class="flex items-center mt-2">
+              <button class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">-</button>
+              <span class="mx-2">${item.quantity}</span>
+              <button class="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center">+</button>
+            </div>
+          </div>
+          <button class="text-gray-400 hover:text-red-500 ml-2">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        
+        cartItemsContainer.appendChild(itemElement);
+      });
+      
+      // Update cart totals
+      const tax = subtotal * 0.08;
+      const total = subtotal + tax + 5.99; // Adding shipping
+      
+      document.getElementById('cart-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+      document.getElementById('cart-tax').textContent = `$${tax.toFixed(2)}`;
+      document.getElementById('cart-total').textContent = `$${total.toFixed(2)}`;
+    }
+    
+    // Color options selection
+    const colorOptions = document.querySelectorAll('.color-option');
+    
+    colorOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        // Remove selected class from siblings
+        const siblings = Array.from(this.parentNode.children);
+        siblings.forEach(sibling => {
+          sibling.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked option
+        this.classList.add('selected');
+      });
+    });
+    
+    // Three.js Hero Background
+    function initThreeJsHero() {
+      const container = document.getElementById('hero-canvas');
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.appendChild(renderer.domElement);
+      
+      // Create gradient background
+      const bgGeometry = new THREE.PlaneGeometry(50, 50);
+      const bgMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+          color1: { value: new THREE.Color('#1d4ed8') },
+          color2: { value: new THREE.Color('#2563eb') }
+        },
+        vertexShader: `
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 color1;
+          uniform vec3 color2;
+          varying vec2 vUv;
+          void main() {
+            gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
+          }
+        `,
+        side: THREE.BackSide
+      });
+      
+      const background = new THREE.Mesh(bgGeometry, bgMaterial);
+      background.position.z = -10;
+      scene.add(background);
+      
+      // Add floating spheres
+      const spheres = [];
+      const sphereCount = 10;
+      
+      for (let i = 0; i < sphereCount; i++) {
+        const geometry = new THREE.SphereGeometry(Math.random() * 0.5 + 0.3, 32, 32);
+        const material = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(Math.random(), Math.random(), Math.random()),
+          transparent: true,
+          opacity: 0.7,
+          shininess: 100
+        });
+        
+        const sphere = new THREE.Mesh(geometry, material);
+        
+        // Random position
+        sphere.position.x = Math.random() * 20 - 10;
+        sphere.position.y = Math.random() * 20 - 10;
+        sphere.position.z = Math.random() * 10 - 5;
+        
+        // Random rotation speed
+        sphere.userData = {
+          rotationSpeed: {
+            x: Math.random() * 0.01,
+            y: Math.random() * 0.01,
+            z: Math.random() * 0.01
+          },
+          floatSpeed: {
+            x: (Math.random() - 0.5) * 0.01,
+            y: (Math.random() - 0.5) * 0.01,
+            z: (Math.random() - 0.5) * 0.01
+          }
+        };
+        
+        spheres.push(sphere);
+        scene.add(sphere);
+      }
+      
+      // Add lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+      
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(5, 5, 5);
+      scene.add(directionalLight);
+      
+      camera.position.z = 5;
+      
+      // Animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        // Rotate and move spheres
+        spheres.forEach(sphere => {
+          sphere.rotation.x += sphere.userData.rotationSpeed.x;
+          sphere.rotation.y += sphere.userData.rotationSpeed.y;
+          sphere.rotation.z += sphere.userData.rotationSpeed.z;
+          
+          sphere.position.x += sphere.userData.floatSpeed.x;
+          sphere.position.y += sphere.userData.floatSpeed.y;
+          sphere.position.z += sphere.userData.floatSpeed.z;
+          
+          // Bounce off invisible boundaries
+          if (Math.abs(sphere.position.x) > 10) {
+            sphere.userData.floatSpeed.x *= -1;
+          }
+          if (Math.abs(sphere.position.y) > 10) {
+            sphere.userData.floatSpeed.y *= -1;
+          }
+          if (Math.abs(sphere.position.z) > 5) {
+            sphere.userData.floatSpeed.z *= -1;
+          }
+        });
+        
+        renderer.render(scene, camera);
+      }
+      
+      animate();
+      
+      // Handle window resize
+      window.addEventListener('resize', function() {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+    }
+    
+    // Initialize Three.js for About section
+    function initAboutCanvas() {
+      const container = document.getElementById('about-canvas');
+      if (!container) return;
+      
+      // Create p5.js instance for the about section
+      new p5(function(p) {
+        let particles = [];
+        
+        p.setup = function() {
+          p.createCanvas(container.clientWidth, container.clientHeight);
+          
+          // Create particles
+          for (let i = 0; i < 100; i++) {
+            particles.push({
+              x: p.random(p.width),
+              y: p.random(p.height),
+              size: p.random(3, 8),
+              speedX: p.random(-0.5, 0.5),
+              speedY: p.random(-0.5, 0.5),
+              color: p.color(p.random(100, 200), p.random(100, 200), p.random(200, 255), p.random(150, 200))
+            });
+          }
+        };
+        
+        p.draw = function() {
+          p.clear();
+          
+          // Draw and update particles
+          for (let i = 0; i < particles.length; i++) {
+            const particle = particles[i];
+            
+            p.fill(particle.color);
+            p.noStroke();
+            p.ellipse(particle.x, particle.y, particle.size);
+            
+            // Update position
+            particle.x += particle.speedX;
+            particle.y += particle.speedY;
+            
+            // Wrap around edges
+            if (particle.x < 0) particle.x = p.width;
+            if (particle.x > p.width) particle.x = 0;
+            if (particle.y < 0) particle.y = p.height;
+            if (particle.y > p.height) particle.y = 0;
+            
+            // Draw connections between nearby particles
+            for (let j = i + 1; j < particles.length; j++) {
+              const other = particles[j];
+              const d = p.dist(particle.x, particle.y, other.x, other.y);
+              
+              if (d < 100) {
+                p.stroke(100, 100, 255, p.map(d, 0, 100, 100, 0));
+                p.line(particle.x, particle.y, other.x, other.y);
+              }
+            }
+          }
+        };
+        
+        p.windowResized = function() {
+          p.resizeCanvas(container.clientWidth, container.clientHeight);
+        };
+      }, container);
+    }
+    
+    // Initialize Three.js and p5.js
+    initThreeJsHero();
+    initAboutCanvas();
+    
+    // Add animation to products using GSAP
+    function animateProducts() {
+      const productCards = document.querySelectorAll('.product-card');
+      
+      gsap.from(productCards, {
+        y: 50,
+        opacity: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: "#products",
+          start: "top 80%"
+        }
+      });
+    }
+    
+    // Add animation to categories
+    function animateCategories() {
+      const categoryCards = document.querySelectorAll('.category-card');
+      
+      gsap.from(categoryCards, {
+        scale: 0.8,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: "back.out(1.7)",
+        scrollTrigger: {
+          trigger: "#categories",
+          start: "top 80%"
+        }
+      });
+    }
+    
+    // Initialize animations when GSAP ScrollTrigger is available
+    if (typeof gsap !== 'undefined' && gsap.ScrollTrigger) {
+      gsap.registerPlugin(ScrollTrigger);
+      animateProducts();
+      animateCategories();
+    }
+  </script>
+</body>
+</html>
